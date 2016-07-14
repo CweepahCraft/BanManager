@@ -20,6 +20,7 @@ import org.mcstats.MetricsLite;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.*;
 
 public class BanManager extends BukkitPlugin {
 
@@ -106,6 +107,11 @@ public class BanManager extends BukkitPlugin {
 
   @Getter
   private Runner syncRunner;
+
+  @Getter
+  private List<UUID> ignoredPlayerJoins = new ArrayList<>();
+  @Getter
+  private List<String> ignoredIpAddressJoins = new ArrayList<>();
 
   @Override
   public void onEnable() {
@@ -241,6 +247,8 @@ public class BanManager extends BukkitPlugin {
     new SyncCommand().register();
 
     new ReasonsCommand().register();
+
+    new StopTheSpamCommand().register();
 
     if (globalConn == null) return;
 

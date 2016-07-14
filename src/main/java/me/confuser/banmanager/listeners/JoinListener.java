@@ -161,12 +161,16 @@ public class JoinListener extends Listeners<BanManager> {
   }
 
   private void handleJoinDeny(PlayerData player, String reason) {
+    if (plugin.getIgnoredPlayerJoins().contains(player.getUUID())) return;
+
     Message message = Message.get("deniedNotify.player").set("player", player.getName()).set("reason", reason);
 
     CommandUtils.broadcast(message.toString(), "bm.notify.denied.player");
   }
 
   private void handleJoinDeny(String ip, String reason) {
+    if (plugin.getIgnoredIpAddressJoins().contains(ip)) return;
+
     Message message = Message.get("deniedNotify.ip").set("ip", ip).set("reason", reason);
 
     CommandUtils.broadcast(message.toString(), "bm.notify.denied.ip");
