@@ -42,9 +42,9 @@ public class JoinListener extends Listeners<BanManager> {
         }
       }
 
-      if (!plugin.getPlayerBanStorage().isBanned(event.getUniqueId())) {
+      if (!plugin.getPlayerBanStorage().isBanned(UUIDUtils.getUUID(event))) {
         try {
-          PlayerBanData ban = plugin.getPlayerBanStorage().retrieveBan(event.getUniqueId());
+          PlayerBanData ban = plugin.getPlayerBanStorage().retrieveBan(UUIDUtils.getUUID(event));
 
           if (ban != null) plugin.getPlayerBanStorage().addBan(ban);
         } catch (SQLException e) {
@@ -52,9 +52,9 @@ public class JoinListener extends Listeners<BanManager> {
         }
       }
 
-      if (!plugin.getPlayerMuteStorage().isMuted(event.getUniqueId())) {
+      if (!plugin.getPlayerMuteStorage().isMuted(UUIDUtils.getUUID(event))) {
         try {
-          PlayerMuteData mute = plugin.getPlayerMuteStorage().retrieveMute(event.getUniqueId());
+          PlayerMuteData mute = plugin.getPlayerMuteStorage().retrieveMute(UUIDUtils.getUUID(event));
 
           if (mute != null) plugin.getPlayerMuteStorage().addMute(mute);
         } catch (SQLException e) {
@@ -126,7 +126,7 @@ public class JoinListener extends Listeners<BanManager> {
       return;
     }
 
-    PlayerBanData data = plugin.getPlayerBanStorage().getBan(event.getUniqueId());
+    PlayerBanData data = plugin.getPlayerBanStorage().getBan(UUIDUtils.getUUID(event));
 
     if (data != null && data.hasExpired()) {
       try {
@@ -178,7 +178,7 @@ public class JoinListener extends Listeners<BanManager> {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onJoin(AsyncPlayerPreLoginEvent event) {
-    PlayerData player = new PlayerData(event.getUniqueId(), event.getName(), event.getAddress());
+    PlayerData player = new PlayerData(UUIDUtils.getUUID(event), event.getName(), event.getAddress());
 
     try {
       plugin.getPlayerStorage().createOrUpdate(player);
@@ -201,11 +201,12 @@ public class JoinListener extends Listeners<BanManager> {
           return;
         }
 
+        UUID id = UUIDUtils.getUUID(event.getPlayer());
         CloseableIterator<PlayerNoteData> notesItr = null;
 
         try {
-          notesItr = plugin.getPlayerNoteStorage().getNotes(event.getPlayer().getUniqueId());
-          ArrayList<String> notes = new ArrayList<String>();
+          notesItr = plugin.getPlayerNoteStorage().getNotes(id);
+          ArrayList<String> notes = new ArrayList<>();
           String dateTimeFormat = Message.getString("notes.dateTimeFormat");
           FastDateFormat dateFormatter = FastDateFormat.getInstance(dateTimeFormat);
 
@@ -239,7 +240,7 @@ public class JoinListener extends Listeners<BanManager> {
 
         CloseableIterator<PlayerWarnData> warnings = null;
         try {
-          warnings = plugin.getPlayerWarnStorage().getUnreadWarnings(event.getPlayer().getUniqueId());
+          warnings = plugin.getPlayerWarnStorage().getUnreadWarnings(id);
 
           while (warnings.hasNext()) {
             PlayerWarnData warning = warnings.next();
@@ -275,7 +276,7 @@ public class JoinListener extends Listeners<BanManager> {
 
         if (event.getPlayer().hasPermission("bm.notify.reports.assigned")) {
           try {
-            ReportList assignedReports = plugin.getPlayerReportStorage().getReports(1, 2, event.getPlayer().getUniqueId());
+            ReportList assignedReports = plugin.getPlayerReportStorage().getReports(1, 2, id);
 
             if (assignedReports == null || assignedReports.getList().size() != 0) {
               CommandUtils.sendReportList(assignedReports, event.getPlayer(), 1);
@@ -334,7 +335,7 @@ public class JoinListener extends Listeners<BanManager> {
 
       public void run() {
         final long ip = IPUtils.toLong(event.getAddress());
-        final UUID uuid = event.getPlayer().getUniqueId();
+        final UUID uuid = UUIDUtils.getUUID(event.getPlayer());
         List<PlayerData> duplicates = plugin.getPlayerBanStorage().getDuplicates(ip);
 
         if (duplicates.isEmpty()) {
@@ -342,11 +343,7 @@ public class JoinListener extends Listeners<BanManager> {
         }
 
         if (plugin.getConfiguration().isDenyAlts()) {
-          try {
-            denyAlts(duplicates, uuid);
-          } catch (SQLException e) {
-            e.printStackTrace();
-          }
+          denyAlts(duplicates, uuid);
         }
 
         if (plugin.getConfiguration().isPunishAlts()) {
@@ -380,7 +377,7 @@ public class JoinListener extends Listeners<BanManager> {
     }, 20L);
   }
 
-  private void denyAlts(List<PlayerData> duplicates, final UUID uuid) throws SQLException {
+  private void denyAlts(List<PlayerData> duplicates, final UUID uuid) {
     if (plugin.getPlayerBanStorage().isBanned(uuid)) return;
 
     for (final PlayerData player : duplicates) {

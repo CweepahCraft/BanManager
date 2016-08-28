@@ -1,6 +1,5 @@
 package me.confuser.banmanager.data;
 
-import lombok.Setter;
 import me.confuser.banmanager.storage.mysql.ByteArray;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
@@ -60,6 +59,13 @@ public class PlayerMuteData {
     this(player, actor, reason, soft, expires);
 
     this.created = created;
+  }
+
+  public PlayerMuteData(int id, PlayerData player, PlayerData actor, String reason, boolean soft, long expires, long created, long updated) {
+    this(player, actor, reason, soft, expires, created);
+
+    this.id = id;
+    this.updated = updated;
   }
 
   public boolean hasExpired() {
