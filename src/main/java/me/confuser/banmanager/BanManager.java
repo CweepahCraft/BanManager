@@ -108,11 +108,6 @@ public class BanManager extends BukkitPlugin {
   @Getter
   private Runner syncRunner;
 
-  @Getter
-  private List<UUID> ignoredPlayerJoins = new ArrayList<>();
-  @Getter
-  private List<String> ignoredIpAddressJoins = new ArrayList<>();
-
   @Override
   public void onEnable() {
     plugin = this;
@@ -229,6 +224,7 @@ public class BanManager extends BukkitPlugin {
 
     // Reports
     new ReportCommand().register();
+    new ReportsCommand().register();
 
     // Kicks
     new KickCommand().register();
@@ -247,8 +243,6 @@ public class BanManager extends BukkitPlugin {
     new SyncCommand().register();
 
     new ReasonsCommand().register();
-
-    new StopTheSpamCommand().register();
 
     if (globalConn == null) return;
 

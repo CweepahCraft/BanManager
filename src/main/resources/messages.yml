@@ -338,7 +338,3 @@ messages:
 
   reasons:
     row: '[hashtag] = [reason]'
-
-  stopthespam:
-    success: "&bNotifications for that player will no longer be shown to staff members."
-    removed: "&bNotiifcations for that player will now be shown to staff members."
