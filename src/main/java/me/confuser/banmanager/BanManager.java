@@ -16,6 +16,11 @@ import me.confuser.banmanager.storage.mysql.MySQLDatabase;
 import me.confuser.banmanager.util.DateUtils;
 import me.confuser.banmanager.util.UpdateUtils;
 import me.confuser.bukkitutil.BukkitPlugin;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventException;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.plugin.EventExecutor;
 import org.mcstats.MetricsLite;
 
 import java.io.IOException;
@@ -62,6 +67,13 @@ public class BanManager extends BukkitPlugin {
   private PlayerReportCommandStorage playerReportCommandStorage;
   @Getter
   private PlayerReportCommentStorage playerReportCommentStorage;
+  @Getter
+  private RollbackStorage rollbackStorage;
+
+  @Getter
+  private NameBanStorage nameBanStorage;
+  @Getter
+  private NameBanRecordStorage nameBanRecordStorage;
 
   @Getter
   private IpBanStorage ipBanStorage;
@@ -230,6 +242,10 @@ public class BanManager extends BukkitPlugin {
     new KickCommand().register();
     new LoglessKickCommand().register();
 
+    new BanNameCommand().register();
+    new TempNameBanCommand().register();
+    new UnbanNameCommand().register();
+
     new WarnCommand().register();
     new TempWarnCommand().register();
     new DeleteLastWarningCommand().register();
@@ -239,6 +255,7 @@ public class BanManager extends BukkitPlugin {
 
     new ClearCommand().register();
     new DeleteCommand().register();
+    new RollbackCommand().register();
 
     new SyncCommand().register();
 
@@ -351,6 +368,10 @@ public class BanManager extends BukkitPlugin {
 
     activityStorage = new ActivityStorage(localConn);
     historyStorage = new HistoryStorage(localConn);
+    rollbackStorage = new RollbackStorage(localConn);
+
+    nameBanStorage = new NameBanStorage(localConn);
+    nameBanRecordStorage = new NameBanRecordStorage(localConn);
 
     if (globalConn == null) {
       return;
@@ -369,9 +390,21 @@ public class BanManager extends BukkitPlugin {
   public void setupListeners() {
     new JoinListener().register();
     new LeaveListener().register();
-    new ChatListener().register();
     new CommandListener().register();
     new HookListener().register();
+
+    ChatListener chatListener = new ChatListener();
+
+    // Set custom priority
+    getServer().getPluginManager().registerEvent(AsyncPlayerChatEvent.class, chatListener, configuration
+            .getChatPriority(), new EventExecutor() {
+
+      @Override
+      public void execute(Listener listener, Event event) throws EventException {
+        ((ChatListener) listener).onPlayerChat((AsyncPlayerChatEvent) event);
+        ((ChatListener) listener).onIpChat((AsyncPlayerChatEvent) event);
+      }
+    }, plugin);
 
     if (configuration.isDisplayNotificationsEnabled()) {
       new BanListener().register();
@@ -384,9 +417,11 @@ public class BanManager extends BukkitPlugin {
   @Override
   public void setupRunnables() {
     if (globalConn == null) {
-      syncRunner = new Runner(new BanSync(), new MuteSync(), new IpSync(), new IpRangeSync(), new ExpiresSync(), new WarningSync());
+      syncRunner = new Runner(new BanSync(), new MuteSync(), new IpSync(), new IpRangeSync(), new ExpiresSync(),
+              new WarningSync(), new RollbackSync(), new NameSync());
     } else {
-      syncRunner = new Runner(new BanSync(), new MuteSync(), new IpSync(), new IpRangeSync(), new ExpiresSync(), new WarningSync(),
+      syncRunner = new Runner(new BanSync(), new MuteSync(), new IpSync(), new IpRangeSync(), new ExpiresSync(),
+              new WarningSync(), new RollbackSync(), new NameSync(),
               new GlobalBanSync(), new GlobalMuteSync(), new GlobalIpSync(), new GlobalNoteSync());
     }
 

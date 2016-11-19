@@ -33,10 +33,10 @@ public class JoinListener extends Listeners<BanManager> {
 
   // Used for throttling attempted join messages
   Cache<String, Long> joinCache = CacheBuilder.newBuilder()
-                                                .expireAfterWrite(1, TimeUnit.MINUTES)
-                                                .concurrencyLevel(2)
-                                                .maximumSize(100)
-                                                .build();
+                                              .expireAfterWrite(1, TimeUnit.MINUTES)
+                                              .concurrencyLevel(2)
+                                              .maximumSize(100)
+                                              .build();
 
   @EventHandler(priority = EventPriority.HIGHEST)
   public void banCheck(final AsyncPlayerPreLoginEvent event) {
@@ -136,6 +136,37 @@ public class JoinListener extends Listeners<BanManager> {
       return;
     }
 
+    if (plugin.getNameBanStorage().isBanned(event.getName())) {
+      NameBanData data = plugin.getNameBanStorage().getBan(event.getName());
+
+      if (data.hasExpired()) {
+        try {
+          plugin.getNameBanStorage().unban(data, plugin.getPlayerStorage().getConsole());
+        } catch (SQLException e) {
+          e.printStackTrace();
+        }
+
+        return;
+      }
+
+      Message message;
+
+      if (data.getExpires() == 0) {
+        message = Message.get("banname.name.disallowed");
+      } else {
+        message = Message.get("tempbanname.name.disallowed");
+        message.set("expires", DateUtils.getDifferenceFormat(data.getExpires()));
+      }
+
+      message.set("name", event.getName());
+      message.set("reason", data.getReason());
+      message.set("actor", data.getActor().getName());
+
+      event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_BANNED);
+      event.setKickMessage(message.toString());
+      return;
+    }
+
     PlayerBanData data = plugin.getPlayerBanStorage().getBan(UUIDUtils.getUUID(event));
 
     if (data != null && data.hasExpired()) {
@@ -228,8 +259,9 @@ public class JoinListener extends Listeners<BanManager> {
 
             Message noteMessage = Message.get("notes.note")
                                          .set("player", note.getActor().getName())
-                                         .set("message", note.getMessage())
+                                         .set("message", note.getMessageColours())
                                          .set("created", dateFormatter.format(note.getCreated() * 1000L));
+
             notes.add(noteMessage.toString());
           }
 
@@ -405,7 +437,7 @@ public class JoinListener extends Listeners<BanManager> {
 
         @Override
         public void run() {
-          Player bukkitPlayer = plugin.getServer().getPlayer(uuid);
+          Player bukkitPlayer = CommandUtils.getPlayer(uuid);
 
           Message kickMessage = Message.get("denyalts.player.disallowed")
                                        .set("player", player.getName())
@@ -443,7 +475,7 @@ public class JoinListener extends Listeners<BanManager> {
 
           @Override
           public void run() {
-            Player bukkitPlayer = plugin.getServer().getPlayer(newBan.getPlayer().getUUID());
+            Player bukkitPlayer = CommandUtils.getPlayer(newBan.getPlayer().getUUID());
 
             Message kickMessage = Message.get("ban.player.kick")
                                          .set("displayName", bukkitPlayer.getDisplayName())

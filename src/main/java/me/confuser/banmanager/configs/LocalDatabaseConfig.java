@@ -38,6 +38,11 @@ public class LocalDatabaseConfig extends DatabaseConfig {
 
     put("ipRangeBans", IpRangeBanData.class);
     put("ipRangeBanRecords", IpRangeBanRecord.class);
+
+    put("rollbacks", RollbackData.class);
+
+    put("nameBans", NameBanData.class);
+    put("nameBanRecords", NameBanRecord.class);
   }};
 
   public LocalDatabaseConfig(ConfigurationSection conf) {

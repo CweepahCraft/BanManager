@@ -1,21 +1,20 @@
 package me.confuser.banmanager.runnables;
 
 import com.j256.ormlite.dao.CloseableIterator;
-import me.confuser.banmanager.data.PlayerBanData;
-import me.confuser.banmanager.data.PlayerBanRecord;
-import me.confuser.banmanager.storage.PlayerBanStorage;
-import me.confuser.banmanager.util.CommandUtils;
+import me.confuser.banmanager.data.NameBanData;
+import me.confuser.banmanager.data.NameBanRecord;
+import me.confuser.banmanager.storage.NameBanStorage;
 import me.confuser.bukkitutil.Message;
 import org.bukkit.entity.Player;
 
 import java.sql.SQLException;
 
-public class BanSync extends BmRunnable {
+public class NameSync extends BmRunnable {
 
-  private PlayerBanStorage banStorage = plugin.getPlayerBanStorage();
+  private NameBanStorage banStorage = plugin.getNameBanStorage();
 
-  public BanSync() {
-    super("playerBans");
+  public NameSync() {
+    super("nameBans");
   }
 
   @Override
@@ -26,14 +25,14 @@ public class BanSync extends BmRunnable {
 
   private void newBans() {
 
-    CloseableIterator<PlayerBanData> itr = null;
+    CloseableIterator<NameBanData> itr = null;
     try {
       itr = banStorage.findBans(lastChecked);
 
       while (itr.hasNext()) {
-        final PlayerBanData ban = itr.next();
+        final NameBanData ban = itr.next();
 
-        if (banStorage.isBanned(ban.getPlayer().getUUID()) && ban.getUpdated() < lastChecked) {
+        if (banStorage.isBanned(ban.getName()) && ban.getUpdated() < lastChecked) {
           continue;
         }
 
@@ -43,13 +42,13 @@ public class BanSync extends BmRunnable {
 
           @Override
           public void run() {
-            Player bukkitPlayer = CommandUtils.getPlayer(ban.getPlayer().getUUID());
+            Player bukkitPlayer = plugin.getServer().getPlayer(ban.getName());
 
             if (bukkitPlayer == null) return;
 
             Message kickMessage = Message.get("ban.player.kick")
                                          .set("displayName", bukkitPlayer.getDisplayName())
-                                         .set("player", ban.getPlayer().getName())
+                                         .set("name", ban.getName())
                                          .set("reason", ban.getReason())
                                          .set("actor", ban.getActor().getName());
 
@@ -68,22 +67,22 @@ public class BanSync extends BmRunnable {
 
   private void newUnbans() {
 
-    CloseableIterator<PlayerBanRecord> itr = null;
+    CloseableIterator<NameBanRecord> itr = null;
     try {
-      itr = plugin.getPlayerBanRecordStorage().findUnbans(lastChecked);
+      itr = plugin.getNameBanRecordStorage().findUnbans(lastChecked);
 
       while (itr.hasNext()) {
-        final PlayerBanRecord ban = itr.next();
+        final NameBanRecord ban = itr.next();
 
-        if (!banStorage.isBanned(ban.getPlayer().getUUID())) {
+        if (!banStorage.isBanned(ban.getName())) {
           continue;
         }
 
-        if (!ban.equalsBan(banStorage.getBan(ban.getPlayer().getUUID()))) {
+        if (!ban.equalsBan(banStorage.getBan(ban.getName()))) {
           continue;
         }
 
-        banStorage.removeBan(ban.getPlayer().getUUID());
+        banStorage.removeBan(ban.getName());
 
       }
     } catch (SQLException e) {
